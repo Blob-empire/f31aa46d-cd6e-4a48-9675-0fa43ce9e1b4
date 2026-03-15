@@ -488,10 +488,6 @@ html, body {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error('Invalid content type');
-            }
             return await response.json();
         } catch (error) {
             console.error(`Fetch error from ${url}:`, error);
