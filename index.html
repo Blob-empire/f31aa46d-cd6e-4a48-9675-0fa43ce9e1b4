@@ -482,18 +482,24 @@ html, body {
         }
     }
 
-    async function safeFetch(url) {
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            return await response.json();
-        } catch (error) {
-            console.error(`Fetch error from ${url}:`, error);
-            return null;
+   async function safeFetch(url, options = {}) {
+    try {
+        const response = await fetch(url, options);
+        const contentType = response.headers.get("content-type");
+
+        if (!response.ok) {
+            const errorData = (contentType && contentType.includes("application/json")) 
+                ? await response.json() 
+                : { error: `HTML Error ${response.status}` };
+            return errorData;
         }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Fetch error from ${url}:`, error);
+        return null;
     }
+}
 
     function checkEnlistment() {
         if (currentUser && isValidUsername(currentUser)) {
@@ -528,26 +534,36 @@ html, body {
     }
 
     try {
-        const res = await safeFetch('/api/enlist', {
+        const response = await fetch('/api/enlist', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ username: sanitizeText(username) })
         });
 
-        if (res && res.success) {
-            localStorage.setItem('empire_user', sanitizeText(username));
-            currentUser = sanitizeText(username);
-            usernameInput.value = '';
-            checkEnlistment();
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                localStorage.setItem('empire_user', sanitizeText(username));
+                currentUser = sanitizeText(username);
+                usernameInput.value = '';
+                checkEnlistment();
+            } else {
+                showError('enlist-error', data.error || 'Enlistment failed');
+            }
         } else {
-            showError('enlist-error', res?.error || 'Enlistment failed');
+            const textError = await response.text();
+            console.error('Server returned non-JSON response:', textError);
+            showError('enlist-error', 'Server error: Invalid response format');
         }
+
     } catch (error) {
-        console.error('Fetch error from /api/enlist:', error);
-        showError('enlist-error', 'Server returned an invalid response format');
+        console.error('Network error during enlistment:', error);
+        showError('enlist-error', 'Unable to connect to the server');
     }
 }
     async function updateMembers() {
