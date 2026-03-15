@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -514,6 +513,12 @@ html, body {
    async function enlist() {
     clearError('enlist-error');
     const usernameInput = document.getElementById('username');
+    
+    if (!usernameInput) {
+        console.error("Element with ID 'username' not found.");
+        return;
+    }
+
     const username = usernameInput.value.trim();
 
     if (!username) {
