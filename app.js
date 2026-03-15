@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const admin = require('firebase-admin');
@@ -7,8 +8,12 @@ const app = express();
 
 app.use(express.json());
 app.use(express.static(__dirname));
-const serviceAccount = require("./serviceAccountKey.json");
-const ADMIN_PASSWORD = "Th3bl0bGr0up2026";
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+const serviceAccount = JSON.parse(
+  Buffer.from(process.env.GOOGLE_CREDENTIALS, "base64").toString("utf8")
+);
 
 const empireConfig = {
     links: {
