@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://cdnjs.cloudflare.com; script-src 'self'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https:;">
     <title>Blob Empire</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -254,6 +256,14 @@ html, body {
     background: #22c55e; 
     border-radius: 10px; 
 }
+
+.error-message {
+    color: #ef4444;
+    padding: 10px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
     </style>
 </head>
 <body>
@@ -279,19 +289,20 @@ html, body {
             <h2 style="font-size: 2em; margin-bottom: 10px;">Welcome</h2>
             <p style="margin-bottom: 25px; font-weight: 600; opacity: 0.7;">Pick a username to enter the empire.</p>
             <div class="input-area" style="width: 350px;">
-                <input type="text" id="eName" placeholder="Username...">
+                <input type="text" id="eName" placeholder="Username..." maxlength="50">
                 <i class="fa-solid fa-arrow-right-to-bracket send-btn" onclick="enlist()"></i>
             </div>
+            <div id="enlist-error" class="error-message" style="display: none; margin-top: 15px; width: 350px;"></div>
         </div>
 
         <div id="comms" class="tab-content">
-            <div class="announcement-bar" id="a-bar">
+            <div class="announcement-bar" id="a-bar" style="display: none;">
                 <i class="fa-solid fa-circle-exclamation"></i>
                 <span id="announcement-text"></span>
             </div>
             <div id="chat" class="chat-box"></div>
             <div class="input-area">
-                <input type="text" id="cMsg" placeholder="Write a message..." onkeypress="if(event.key === 'Enter') send()">
+                <input type="text" id="cMsg" placeholder="Write a message..." maxlength="500" onkeypress="if(event.key === 'Enter') send()">
                 <i class="fa-solid fa-paper-plane send-btn" onclick="send()"></i>
             </div>
         </div>
@@ -314,7 +325,70 @@ html, body {
 </div>
 
 <script>
+    function escapeHTML(text) {
+        if (typeof text !== 'string') {
+            return '';
+        }
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;'
+        };
+        return text.replace(/[&<>"'\/]/g, (char) => map[char]);
+    }
+
+    function sanitizeText(text) {
+        if (typeof text !== 'string') {
+            return '';
+        }
+        return text
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+            .replace(/on\w+\s*=\s*[^\s>]*/gi, '')
+            .trim();
+    }
+
+    function sanitizeURL(url) {
+        if (typeof url !== 'string') {
+            return null;
+        }
+        const trimmedUrl = url.trim().toLowerCase();
+        if (trimmedUrl.startsWith('javascript:') || 
+            trimmedUrl.startsWith('data:') || 
+            trimmedUrl.startsWith('vbscript:') ||
+            trimmedUrl.startsWith('file:')) {
+            return null;
+        }
+        if (trimmedUrl.startsWith('http://') || 
+            trimmedUrl.startsWith('https://') || 
+            trimmedUrl.startsWith('mailto:') ||
+            trimmedUrl.startsWith('/') ||
+            trimmedUrl.startsWith('.')) {
+            return url;
+        }
+        return null;
+    }
+
+    function isValidUsername(username) {
+        if (typeof username !== 'string') {
+            return false;
+        }
+        const trimmed = username.trim();
+        return /^[a-zA-Z0-9_-]{3,50}$/.test(trimmed);
+    }
+
+    function createSafeTextElement(tag, text) {
+        const element = document.createElement(tag);
+        element.textContent = sanitizeText(text);
+        return element;
+    }
+
     let currentUser = localStorage.getItem('empire_user');
+    const MAX_MESSAGE_LENGTH = 500;
+    const MAX_USERNAME_LENGTH = 50;
 
     function openTab(name) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -324,87 +398,244 @@ html, body {
         document.getElementById(map[name]).classList.add('active');
     }
 
+    function showError(elementId, message) {
+        const errorEl = document.getElementById(elementId);
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+    }
+
+    function clearError(elementId) {
+        const errorEl = document.getElementById(elementId);
+        if (errorEl) {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+        }
+    }
+
     async function init() {
-        const config = await fetch('/data/config').then(r => r.json());
-        document.getElementById('emp-name').innerText = config.name;
-        document.getElementById('emp-pronounce').innerText = config.pronunciation;
-        
-        const rulesArray = config.rules.split(/\d+:/).filter(r => r.trim().length > 0);
-        document.getElementById('rules-list').innerHTML = rulesArray.map((r, i) => `
-            <div class="rule-card">
-                <i class="fa-solid fa-check-circle"></i>
-                <p>${r.trim()}</p>
-            </div>`).join('');
+        try {
+            const config = await safeFetch('/data/config');
+            if (!config) return;
 
-        const linksArea = document.getElementById('dynamic-links');
-        linksArea.innerHTML = Object.entries(config.links).map(([n, u]) => `
-            <a href="${u}" target="_blank" class="link-btn">
-                <i class="fa-solid fa-external-link"></i> ${n}
-            </a>`).join('');
+            document.getElementById('emp-name').textContent = sanitizeText(config.name || 'BLOB EMPIRE');
+            document.getElementById('emp-pronounce').textContent = sanitizeText(config.pronunciation || '');
 
-        const announce = await fetch('/data/currentannounce').then(r => r.json());
-        if(announce.text) document.getElementById('announcement-text').innerText = announce.text;
-        else document.getElementById('a-bar').style.display = 'none';
+            if (config.rules && typeof config.rules === 'string') {
+                const rulesArray = config.rules.split(/\d+:/).filter(r => r.trim().length > 0);
+                const rulesList = document.getElementById('rules-list');
+                rulesList.innerHTML = '';
+                rulesArray.forEach((rule) => {
+                    const ruleCard = document.createElement('div');
+                    ruleCard.className = 'rule-card';
+                    
+                    const icon = document.createElement('i');
+                    icon.className = 'fa-solid fa-check-circle';
+                    
+                    const text = document.createElement('p');
+                    text.textContent = sanitizeText(rule.trim());
+                    
+                    ruleCard.appendChild(icon);
+                    ruleCard.appendChild(text);
+                    rulesList.appendChild(ruleCard);
+                });
+            }
 
-        checkEnlistment();
-        updateMembers();
-        updateChat();
-        setInterval(updateChat, 5000);
+            if (config.links && typeof config.links === 'object') {
+                const linksArea = document.getElementById('dynamic-links');
+                linksArea.innerHTML = '';
+                Object.entries(config.links).forEach(([name, url]) => {
+                    const safeUrl = sanitizeURL(url);
+                    if (!safeUrl) return;
+                    
+                    const linkBtn = document.createElement('a');
+                    linkBtn.className = 'link-btn';
+                    linkBtn.href = safeUrl;
+                    linkBtn.target = '_blank';
+                    linkBtn.rel = 'noopener noreferrer';
+                    
+                    const icon = document.createElement('i');
+                    icon.className = 'fa-solid fa-external-link';
+                    
+                    const label = document.createElement('span');
+                    label.textContent = sanitizeText(name);
+                    
+                    linkBtn.appendChild(icon);
+                    linkBtn.appendChild(document.createTextNode(' '));
+                    linkBtn.appendChild(label);
+                    linksArea.appendChild(linkBtn);
+                });
+            }
+
+            const announce = await safeFetch('/data/currentannounce');
+            if (announce && announce.text) {
+                document.getElementById('announcement-text').textContent = sanitizeText(announce.text);
+                document.getElementById('a-bar').style.display = 'flex';
+            }
+
+            checkEnlistment();
+            updateMembers();
+            updateChat();
+            setInterval(updateChat, 5000);
+        } catch (error) {
+            console.error('Initialization error:', error);
+        }
+    }
+
+    async function safeFetch(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Invalid content type');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`Fetch error from ${url}:`, error);
+            return null;
+        }
     }
 
     function checkEnlistment() {
-        if (currentUser) {
+        if (currentUser && isValidUsername(currentUser)) {
             document.getElementById('enlist-screen').classList.remove('active');
             document.getElementById('comms').classList.add('active');
-            ['t-chat', 't-members', 't-links', 't-rules'].forEach(id => document.getElementById(id).disabled = false);
+            ['t-chat', 't-members', 't-links', 't-rules'].forEach(id => {
+                document.getElementById(id).disabled = false;
+            });
             document.getElementById('t-chat').classList.add('active');
         }
     }
 
     async function enlist() {
-        const username = document.getElementById('eName').value;
-        if(!username) return;
-        const res = await fetch('/api/enlist', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ username })
-        }).then(r => r.json());
-        if(res.success) {
-            localStorage.setItem('empire_user', username);
-            currentUser = username;
-            checkEnlistment();
-        } else alert(res.error);
+        clearError('enlist-error');
+        const usernameInput = document.getElementById('eName');
+        const username = usernameInput.value.trim();
+
+        if (!username) {
+            showError('enlist-error', 'Username cannot be empty');
+            return;
+        }
+
+        if (!isValidUsername(username)) {
+            showError('enlist-error', 'Username must be 3-50 characters (alphanumeric, underscore, hyphen)');
+            return;
+        }
+
+        try {
+            const res = await safeFetch('/api/enlist?username=' + encodeURIComponent(username));
+            if (res && res.success) {
+                localStorage.setItem('empire_user', sanitizeText(username));
+                currentUser = sanitizeText(username);
+                usernameInput.value = '';
+                checkEnlistment();
+            } else {
+                showError('enlist-error', res?.error || 'Enlistment failed');
+            }
+        } catch (error) {
+            console.error('Enlistment error:', error);
+            showError('enlist-error', 'An error occurred during enlistment');
+        }
     }
 
     async function updateMembers() {
-        const list = await fetch('/data/members').then(r => r.json());
-        document.getElementById('member-list').innerHTML = list.map(m => `
-            <div class="member-tag">
-                <i class="fa-solid fa-user"></i> ${m}
-            </div>`).join('');
+        try {
+            const list = await safeFetch('/data/members');
+            const memberList = document.getElementById('member-list');
+            memberList.innerHTML = '';
+            
+            if (Array.isArray(list)) {
+                list.forEach(member => {
+                    const memberTag = document.createElement('div');
+                    memberTag.className = 'member-tag';
+                    
+                    const icon = document.createElement('i');
+                    icon.className = 'fa-solid fa-user';
+                    
+                    const name = document.createElement('span');
+                    name.textContent = sanitizeText(member);
+                    
+                    memberTag.appendChild(icon);
+                    memberTag.appendChild(document.createTextNode(' '));
+                    memberTag.appendChild(name);
+                    memberList.appendChild(memberTag);
+                });
+            }
+        } catch (error) {
+            console.error('Update members error:', error);
+        }
     }
 
     async function updateChat() {
-        const data = await fetch('/data/messages').then(r => r.json());
-        const chat = document.getElementById('chat');
-        chat.innerHTML = Object.values(data).map(m => `
-            <div class="chat-msg">
-                <b>${m.user}:</b> ${m.text}
-            </div>`).join('');
-        chat.scrollTop = chat.scrollHeight;
+        try {
+            const data = await safeFetch('/data/messages');
+            const chat = document.getElementById('chat');
+            chat.innerHTML = '';
+            
+            if (data && typeof data === 'object') {
+                Object.values(data).forEach(message => {
+                    if (!message || typeof message !== 'object') return;
+                    
+                    const chatMsg = document.createElement('div');
+                    chatMsg.className = 'chat-msg';
+                    
+                    const username = document.createElement('b');
+                    username.textContent = sanitizeText(message.user);
+                    
+                    const colon = document.createTextNode(': ');
+                    
+                    const text = document.createElement('span');
+                    text.textContent = sanitizeText(message.text);
+                    
+                    chatMsg.appendChild(username);
+                    chatMsg.appendChild(colon);
+                    chatMsg.appendChild(text);
+                    chat.appendChild(chatMsg);
+                });
+            }
+            chat.scrollTop = chat.scrollHeight;
+        } catch (error) {
+            console.error('Update chat error:', error);
+        }
     }
 
     async function send() {
         const input = document.getElementById('cMsg');
-        if(!input.value || !currentUser) return;
-        const res = await fetch('/api/send', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ username: currentUser, message: input.value })
-        }).then(r => r.json());
-        if(res.success) {
-            input.value = '';
-            updateChat();
+        const messageText = input.value.trim();
+
+        if (!messageText) return;
+        if (!currentUser) {
+            console.error('User not authenticated');
+            return;
+        }
+
+        if (messageText.length > MAX_MESSAGE_LENGTH) {
+            alert(`Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters`);
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: currentUser,
+                    message: messageText
+                })
+            }).then(r => r.json()).catch(() => ({ success: false }));
+
+            if (res && res.success) {
+                input.value = '';
+                await updateChat();
+            } else {
+                console.error('Send failed:', res?.error);
+            }
+        } catch (error) {
+            console.error('Send error:', error);
         }
     }
 
