@@ -80,19 +80,36 @@ app.get('/data/messages', async (req, res) => {
   } catch (e) { res.status(500).send(); }
 });
 
-app.post('/api/send', sendLimit, async (req, res) => {
+const lastSent = new Map();
+const COOLDOWN_MS = 300;
+
+app.post('/api/send', (req, res) => {
   const { username, message } = req.body;
   const userIP = req.ip;
-  if (!username || !message) return res.status(400).json({ error: "Missing data" });
-  if (ipToUsername.has(userIP) && ipToUsername.get(userIP) !== username) {
-    return res.status(403).json({ error: "IP locked to another user" });
+  const now = Date.now();
+
+  if (lastSent.has(userIP)) {
+    const timePassed = now - lastSent.get(userIP);
+    if (timePassed < COOLDOWN_MS) {
+      return res.status(429).json({ 
+        error: "Too many messages", 
+        retryAfter: COOLDOWN_MS - timePassed 
+      });
+    }
   }
-  ipToUsername.set(userIP, username);
-  await db.ref('chat').push({
+
+  if (!username || !message) {
+    return res.status(400).json({ error: "Missing data" });
+  }
+
+  lastSent.set(userIP, now);
+
+  db.ref('chat').push({
     user: username,
     text: message,
     timestamp: admin.database.ServerValue.TIMESTAMP
-  });
+  }).catch(err => console.error("DB Error:", err));
+
   res.json({ success: true });
 });
 
