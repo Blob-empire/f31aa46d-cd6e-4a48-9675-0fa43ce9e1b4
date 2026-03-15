@@ -75,7 +75,7 @@ app.get('/data/members', async (req, res) => {
 
 app.get('/data/messages', async (req, res) => {
   try {
-    const snap = await db.ref('chat').orderByKey().limitToFirst(50).get();
+    const snap = await db.ref('chat').orderByKey().limitToLast(50).get();
     res.json(snap.val() || {});
   } catch (e) { res.status(500).send(); }
 });
