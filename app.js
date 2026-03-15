@@ -52,6 +52,11 @@ app.get('/data/config', (req, res) => {
   res.json(empireConfig);
 });
 
+app.get('/favicon.png', (req, res) => {
+  const filePath = path.join(__dirname, 'favicon.png'); 
+  res.sendFile(filePath);
+});
+
 app.get('/data/currentannounce', async (req, res) => {
   try {
     const snap = await db.ref('announcement').get();
