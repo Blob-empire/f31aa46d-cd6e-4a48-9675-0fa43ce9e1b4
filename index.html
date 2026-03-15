@@ -7,15 +7,37 @@
     <title>Blob Empire</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-       * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+     * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
 
 html, body { 
     width: 100%; 
     height: 100%; 
     font-family: 'Segoe UI', sans-serif; 
-    background-color: #010B04;
-    color: #f0fdf4; 
+    background-color: #000814; 
+    color: #f0f9ff; 
     overflow: hidden; 
+    position: relative;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: 
+        radial-gradient(circle at center, rgba(14, 165, 233, 0.1) 0%, transparent 70%),
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="86.6" viewBox="0 0 50 86.6"><path d="M25 0L50 14.4V43.3L25 57.7L0 43.3V14.4L25 0ZM25 86.6L50 72.2V43.3L25 57.7L0 43.3V72.2L25 86.6Z" fill="none" stroke="%230ea5e9" stroke-width="1" opacity="0.2"/></svg>');
+    background-size: 100% 100%, 50px 86.6px;
+    transform: rotate(15deg); 
+    animation: moveBackground 20s linear infinite;
+    z-index: -1;
+}
+
+@keyframes moveBackground {
+    from { background-position: 0 0; }
+    to { background-position: 0 -1000px; } 
 }
 
 .main-wrapper { 
@@ -26,6 +48,8 @@ html, body {
     gap: 20px; 
     max-width: 1400px; 
     margin: 0 auto; 
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar-left { 
@@ -37,7 +61,7 @@ html, body {
 
 .branding { 
     padding: 10px 5px; 
-    border-bottom: 2px solid #22c55e; 
+    border-bottom: 2px solid #0ea5e9; 
 }
 
 .branding h1 { 
@@ -50,7 +74,7 @@ html, body {
 .branding p { 
     font-size: 0.9em; 
     font-weight: bold; 
-    color: #22c55e; 
+    color: #0ea5e9; 
 }
 
 .tab-nav { 
@@ -62,9 +86,9 @@ html, body {
 .tab-btn { 
     width: 100%; 
     padding: 15px; 
-    border: 2px solid #1a4a0a; 
-    background: #0d2e04; 
-    color: #f0fdf4; 
+    border: 2px solid #075985; 
+    background: #082f49; 
+    color: #f0f9ff; 
     cursor: pointer; 
     border-radius: 12px; 
     text-align: left; 
@@ -77,54 +101,39 @@ html, body {
 
 .tab-btn i { 
     font-size: 1.2em; 
-    color: #22c55e; 
+    color: #0ea5e9; 
 }
 
 .tab-btn:hover { 
-    border-color: #22c55e; 
-    background: #1a4a0a; 
+    border-color: #38bdf8; 
+    background: #0c4a6e; 
 }
 
 .tab-btn.active { 
-    background: #22c55e; 
-    color: #010B04; 
+    background: #0ea5e9; 
+    color: #000814; 
     border-color: #ffffff; 
 }
 
 .tab-btn.active i { 
-    color: #010B04; 
-}
-
-.tab-btn:disabled { 
-    opacity: 0.3; 
-    cursor: not-allowed; 
+    color: #000814; 
 }
 
 .content-view { 
     flex: 1; 
-    background: #05150a;
-    border: 2px solid #22c55e; 
+    background: rgba(2, 13, 26, 0.95); 
+    border: 2px solid #0ea5e9; 
     border-radius: 20px; 
     display: flex; 
     flex-direction: column; 
     padding: 25px; 
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
     overflow: hidden; 
 }
 
-.tab-content { 
-    display: none; 
-    height: 100%; 
-    flex-direction: column; 
-}
-
-.tab-content.active { 
-    display: flex; 
-}
-
 .announcement-bar { 
-    background: #22c55e; 
-    color: #010B04; 
+    background: #0ea5e9; 
+    color: #000814; 
     padding: 15px; 
     margin-bottom: 20px; 
     border-radius: 12px; 
@@ -134,134 +143,42 @@ html, body {
     gap: 12px; 
 }
 
-.announcement-bar i { 
-    font-size: 1.3em; 
-}
-
-.chat-box { 
-    flex: 1; 
-    overflow-y: auto; 
-    margin-bottom: 20px; 
-}
-
-.chat-msg { 
-    margin-bottom: 12px; 
-    padding: 12px 18px; 
-    background: rgba(255, 255, 255, 0.05); 
-    border-radius: 10px; 
-    border: 1px solid #1a4a0a; 
-    display: flex; 
-    gap: 10px; 
-}
-
 .chat-msg b { 
-    color: #22c55e; 
+    color: #0ea5e9; 
 }
 
 .input-area { 
     display: flex; 
     gap: 12px; 
-    background: #0d2e04; 
-    border: 2px solid #22c55e; 
+    background: #082f49; 
+    border: 2px solid #0ea5e9; 
     border-radius: 14px; 
     padding: 12px 20px; 
-    align-items: center; 
-}
-
-.input-area input { 
-    flex: 1; 
-    background: none; 
-    border: none; 
-    color: #ffffff; 
-    font-size: 1em; 
-    font-weight: 500; 
 }
 
 .send-btn { 
-    color: #22c55e; 
+    color: #0ea5e9; 
     cursor: pointer; 
-    font-size: 1.4em; 
-}
-
-.rules-list { 
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-}
-
-.rule-card { 
-    padding: 18px; 
-    background: rgba(34, 197, 94, 0.1); 
-    border: 1px solid #22c55e; 
-    border-radius: 12px; 
-    display: flex; 
-    gap: 15px; 
-    align-items: flex-start; 
-}
-
-.rule-card i { 
-    color: #22c55e; 
-    font-size: 1.4em; 
-}
-
-.links-grid { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
-    gap: 15px; 
 }
 
 .link-btn { 
-    display: flex; 
-    align-items: center; 
-    gap: 12px; 
-    padding: 20px; 
-    background: #0d2e04; 
-    border: 2px solid #22c55e; 
-    border-radius: 12px; 
+    background: #082f49; 
+    border: 2px solid #0ea5e9; 
     color: #ffffff; 
-    text-decoration: none; 
-    font-weight: 800; 
-    transition: 0.2s; 
 }
 
 .link-btn:hover { 
-    background: #22c55e; 
-    color: #010B04; 
-}
-
-.members-flex { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 12px; 
+    background: #0ea5e9; 
+    color: #000814; 
 }
 
 .member-tag { 
-    background: #1a4a0a; 
-    border: 1px solid #22c55e; 
-    padding: 8px 16px; 
-    border-radius: 12px; 
-    font-weight: 700; 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-}
-
-::-webkit-scrollbar { 
-    width: 8px; 
+    background: #0c4a6e; 
+    border: 1px solid #0ea5e9; 
 }
 
 ::-webkit-scrollbar-thumb { 
-    background: #22c55e; 
-    border-radius: 10px; 
-}
-
-.error-message {
-    color: #ef4444;
-    padding: 10px;
-    background: rgba(239, 68, 68, 0.1);
-    border-radius: 8px;
-    margin-bottom: 10px;
+    background: #0ea5e9; 
 }
     </style>
 </head>
