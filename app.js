@@ -26,7 +26,7 @@ const empireConfig = {
     },
     rules: "1: Do not say anything racist, sexist, ableist, or ageist. We have a zero-tolerance policy for any language that attacks someone’s race, gender, identity, or disability. This includes slurs, 'jokes' based on stereotypes, and any form of supremacy or dehumanization. 2: Do not talk about sensitive historical events such as 9/11 or Germany 1939. 3: Do not attempt to exploit or hack this group; we are here to build a community, so do not ruin the experience for others. 4: Respect the staff of the Blob Empire; they work hard to keep this group intact and secure. 5: Do not share links to scams, phishing sites, or malicious software. This includes 'Free Nitro' scams, suspicious gift links, and unauthorized QR code logins. Sharing any link designed to steal accounts or personal data will result in an immediate permanent ban. 6: Variable and API Integrity; do not use variables or scripts to disrupt our services. Respect the 300ms rate limits and do not attempt to spam or manipulate our APIs. 7: Follow discord TOS which can be found at https://discord.com/terms",
     name: "Blob Empire",
-    pronunciation: "bl-ob emp-ire",
+    pronunciation: "blawb em-py-er",
     owner: "Blob_raccoon",
     discord: "https://discord.gg/v2hhPtywgu"
 };
