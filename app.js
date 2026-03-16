@@ -57,6 +57,11 @@ app.get('/favicon.png', (req, res) => {
   res.sendFile(filePath);
 });
 
+app.get('/background.jpeg', (req, res) => {
+  const filePath = path.join(__dirname, 'background.jpeg'); 
+  res.sendFile(filePath);
+});
+
 app.get('/data/currentannounce', async (req, res) => {
   try {
     const snap = await db.ref('announcement').get();
