@@ -74,6 +74,26 @@ app.get('/data/currentannounce', async (req, res) => {
   } catch (e) { res.status(500).send(); }
 });
 
+const app = express();
+
+app.get("/music.js", (req, res) => {
+    res.sendFile(path.join(__dirname, "music.js"));
+});
+
+app.get("/:song", (req, res) => {
+
+    const name = req.params.song;
+
+    if (!name.endsWith(".mp3")) {
+        return res.status(404).end();
+    }
+
+    res.sendFile(path.join(__dirname, name));
+});
+
+app.listen(3000, () => {
+    console.log("http://localhost:3000");
+});
 app.get('/data/members', async (req, res) => {
   try {
     const snap = await db.ref('members').get();
